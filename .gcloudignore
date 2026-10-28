@@ -1,0 +1,14 @@
+# Evita subir a Cloud Build archivos innecesarios (contexto mas pequeno y rapido).
+.git
+.gitignore
+.gitattributes
+node_modules
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+.env
+.env.*
+*.pem
+*.key
+README*.md

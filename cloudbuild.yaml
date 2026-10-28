@@ -1,0 +1,60 @@
+# Build + push a Artifact Registry + deploy a Cloud Run.
+#
+# Uso manual (usa los valores por defecto de abajo):
+#   gcloud builds submit --config cloudbuild.yaml .
+#
+# Tambien funciona como build trigger (Cloud Build > Triggers) sin cambios.
+# Requiere que el repositorio de Artifact Registry exista (ver README-DEPLOY.md).
+
+substitutions:
+  _SERVICE: ja-carpet-web
+  _REGION: us-east1
+  _REPO: ja-web
+  _MEMORY: 256Mi
+  _CPU: "1"
+  _MAX_INSTANCES: "10"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1200s
+
+steps:
+  # 1) Construir la imagen usando el Dockerfile.
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --tag=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
+      - --tag=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
+      - .
+
+  # 2) Publicar la imagen en Artifact Registry.
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}
+
+  # 3) Desplegar en Cloud Run (servicio publico, escala a cero).
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
+      - --project=$PROJECT_ID
+      - --region=${_REGION}
+      - --platform=managed
+      - --port=8080
+      - --memory=${_MEMORY}
+      - --cpu=${_CPU}
+      - --min-instances=0
+      - --max-instances=${_MAX_INSTANCES}
+      - --concurrency=80
+      - --timeout=60
+      - --allow-unauthenticated
+      - --quiet

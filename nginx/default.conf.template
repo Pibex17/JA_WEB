@@ -1,0 +1,62 @@
+server {
+    listen ${PORT};
+    server_name _;
+    server_tokens off;
+
+    root /usr/share/nginx/html;
+    index index.html;
+    charset utf-8;
+
+    # Cabeceras de seguridad (se heredan en los location que no definan add_header).
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+
+    # Compresion para reducir el peso transferido.
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        application/xml
+        application/xml+rss
+        image/svg+xml;
+
+    # Health check para Cloud Run / Docker.
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Imagenes: cache larga (los nombres de archivo no cambian con frecuencia).
+    location ~* \.(?:png|jpe?g|gif|webp|avif|svg|ico)$ {
+        expires 30d;
+        try_files $uri =404;
+    }
+
+    # CSS y JS: cache corta con revalidacion.
+    location ~* \.(?:css|js)$ {
+        expires 1h;
+        try_files $uri =404;
+    }
+
+    # Fuentes (si se agregan en el futuro).
+    location ~* \.(?:woff2?|ttf|otf|eot)$ {
+        expires 1y;
+        try_files $uri =404;
+    }
+
+    # HTML y rutas normales: siempre revalidar para publicar cambios al instante.
+    location / {
+        expires -1;
+        try_files $uri $uri/ =404;
+    }
+}

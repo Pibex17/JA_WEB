@@ -1,0 +1,25 @@
+# Control de versiones y metadatos
+.git
+.gitignore
+.gitattributes
+.gcloudignore
+
+# Configuracion de build/deploy (no debe viajar dentro del sitio)
+Dockerfile
+.dockerignore
+cloudbuild.yaml
+README*.md
+*.md
+
+# Dependencias y artefactos locales
+node_modules
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# Entornos y secretos
+.env
+.env.*
+*.pem
+*.key
